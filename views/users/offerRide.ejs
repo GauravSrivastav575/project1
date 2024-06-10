@@ -1,0 +1,345 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8" />
+    <title>Rojgar-Sarthi</title>
+    <meta name="viewport" content="initial-scale=1,maximum-scale=1,user-scalable=no" />
+    <link href='https://api.mapbox.com/mapbox-gl-js/v2.11.0/mapbox-gl.css' rel='stylesheet' />
+    <link href='https://api.mapbox.com/mapbox-gl-js/plugins/mapbox-gl-geocoder/v4.7.0/mapbox-gl-geocoder.css' rel='stylesheet' />
+    <style>
+        body { margin: 0; padding: 0; }
+        #map { position: absolute; top: 0;left: 300px; bottom: 0; width: 450px; height: 450px; }
+        #geocoder-container {
+            position: absolute;
+            top: 10px;
+            left: 10px;
+            z-index: 1;
+            background: rgba(255, 255, 255, 0.9);
+            padding: 10px;
+            border-radius: 3px;
+            box-shadow: 0 1px 2px rgba(0,0,0,0.1);
+        }
+        .start-marker {
+            background-color: blue;
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            cursor: pointer;
+        }
+        .end-marker {
+            background-color: red;
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            cursor: pointer;
+        }
+    </style>
+    
+</head>
+<body>
+    <div id="map"></div>
+    <div id="geocoder-container">
+        <div id="startGeocoder"></div>
+        <button id="currentLocationButton" style="margin-top: 10px;">Use Current Location</button>
+        <div id="endGeocoder" style="margin-top: 10px;"></div>
+        <form id="rideForm" action="/offerRide" method="POST" onsubmit="handleSubmit(event)">
+            <!-- <label for="startLocation">Starting Location:</label>
+            <input type="text" id="startLocation" name="startLocation" required> -->
+    
+            <input type="hidden" id="startLat" name="startLat">
+            <input type="hidden" id="startLng" name="startLng">
+    
+            <!-- <label for="endLocation">Ending Location:</label>
+            <input type="text" id="endLocation" name="endLocation" required> -->
+    
+            <input type="hidden" id="endLat" name="endLat">
+            <input type="hidden" id="endLng" name="endLng">
+    
+            <button type="submit">Submit</button>
+        </form>
+    </div>
+
+    <script src='https://api.mapbox.com/mapbox-gl-js/v2.11.0/mapbox-gl.js'></script>
+    <script src='https://api.mapbox.com/mapbox-gl-js/plugins/mapbox-gl-geocoder/v4.7.0/mapbox-gl-geocoder.min.js'></script>
+    <script>
+        mapboxgl.accessToken = 'pk.eyJ1IjoiMTIzZ2F1cmF2IiwiYSI6ImNsd203MzFjcDFyeWYya215eno5NHpveGgifQ.HGwwKwppvbuFYvm5OSvTOQ'; // Replace with your Mapbox access token
+
+        var map = new mapboxgl.Map({
+            container: 'map',
+            style: 'mapbox://styles/mapbox/streets-v11',
+            center: [78.9629, 20.5937], // Center of India [lng, lat]
+            zoom: 4 // Starting zoom level for a better view of India
+        });
+
+        var startGeocoder = new MapboxGeocoder({
+            accessToken: mapboxgl.accessToken,
+            mapboxgl: mapboxgl,
+            placeholder: 'Enter starting location',
+            countries: 'IN' // Restrict results to India
+        });
+
+        var endGeocoder = new MapboxGeocoder({
+            accessToken: mapboxgl.accessToken,
+            mapboxgl: mapboxgl,
+            placeholder: 'Enter destination location',
+            countries: 'IN' // Restrict results to India
+        });
+
+        document.getElementById('startGeocoder').appendChild(startGeocoder.onAdd(map));
+        document.getElementById('endGeocoder').appendChild(endGeocoder.onAdd(map));
+
+        var startMarker, endMarker;
+        var selectedRouteIndex = null;
+        var selectedRouteCoordinates = null;
+
+        // async function getRoute(start, end) {
+        //     const query = `https://api.mapbox.com/directions/v5/mapbox/driving/${start[0]},${start[1]};${end[0]},${end[1]}?steps=true&geometries=geojson&access_token=${mapboxgl.accessToken}`;
+            
+        //     const response = await fetch(query);
+        //     const data = await response.json();
+        //     const route = data.routes[0].geometry;
+            
+        //     if (map.getSource('route')) {
+        //         map.getSource('route').setData(route);
+        //     } else {
+        //         map.addLayer({
+        //             id: 'route',
+        //             type: 'line',
+        //             source: {
+        //                 type: 'geojson',
+        //                 data: route
+        //             },
+        //             layout: {
+        //                 'line-join': 'round',
+        //                 'line-cap': 'round'
+        //             },
+        //             paint: {
+        //                 'line-color': '#3887be',
+        //                 'line-width': 5,
+        //                 'line-opacity': 0.75
+        //             }
+        //         });
+        //     }
+
+        //     const bounds = new mapboxgl.LngLatBounds(start, start);
+        //     bounds.extend(end);
+        //     map.fitBounds(bounds, {
+        //         padding: 50
+        //     });
+        // }
+
+        async function getRoute(start, end) {
+            const query = `https://api.mapbox.com/directions/v5/mapbox/driving/${start[0]},${start[1]};${end[0]},${end[1]}?alternatives=true&steps=true&geometries=geojson&overview=full&access_token=${mapboxgl.accessToken}`;
+            
+            const response = await fetch(query);
+            const data = await response.json();
+            const routes = data.routes;
+            console.log(routes);
+            const colors = ['#3887be', '#f6b26b']; // Colors for the routes
+
+            routes.forEach((route, index) => {
+                const routeId = `route${index}`;
+                const routeData = route.geometry;
+
+                if (map.getSource(routeId)) {
+                    map.getSource(routeId).setData(routeData);
+                } else {
+                    map.addLayer({
+                        id: routeId,
+                        type: 'line',
+                        source: {
+                            type: 'geojson',
+                            data: routeData
+                        },
+                        layout: {
+                            'line-join': 'round',
+                            'line-cap': 'round'
+                        },
+                        paint: {
+                            'line-color': colors[index],
+                            'line-width': 5,
+                            'line-opacity': 0.75
+                        }
+                    });
+                    map.on('click', routeId, function () {
+                        if (selectedRouteIndex !== null) {
+                            // Reset the previously selected route's color
+                            map.setPaintProperty(`route${selectedRouteIndex}`, 'line-color', colors[selectedRouteIndex]);
+                        }
+                        // Highlight the selected route
+                        map.setPaintProperty(routeId, 'line-color', '#ff0000');
+                        selectedRouteIndex = index;
+                        selectedRouteCoordinates = routeData;
+                        console.log(selectedRouteCoordinates);
+                        console.log(selectedRouteIndex);
+                    });
+
+                    map.on('mouseenter', routeId, function () {
+                        map.getCanvas().style.cursor = 'pointer';
+                    });
+
+                    map.on('mouseleave', routeId, function () {
+                        map.getCanvas().style.cursor = '';
+                    });
+                }
+            });
+
+            const bounds = new mapboxgl.LngLatBounds(start, start);
+            bounds.extend(end);
+            map.fitBounds(bounds, {
+                padding: 50
+            });
+        }
+
+        startGeocoder.on('result', function(e) {
+            var start = e.result.geometry.coordinates;
+            sessionStorage.setItem('start', JSON.stringify(start));
+            document.getElementById('startLat').value = start[1];
+            document.getElementById('startLng').value = start[0];
+            if (startMarker) {
+                startMarker.remove();
+            }
+            startMarker = new mapboxgl.Marker({ color: 'blue' })
+                .setLngLat(start)
+                .addTo(map);
+
+            if (sessionStorage.getItem('end')) {
+                var end = JSON.parse(sessionStorage.getItem('end'));
+                getRoute(start, end);
+            }
+        });
+
+        endGeocoder.on('result', function(e) {
+            var end = e.result.geometry.coordinates;
+            sessionStorage.setItem('end', JSON.stringify(end));
+            document.getElementById('endLat').value = end[1];
+            document.getElementById('endLng').value = end[0];
+            if (endMarker) {
+                endMarker.remove();
+            }
+            endMarker = new mapboxgl.Marker({ color: 'red' })
+                .setLngLat(end)
+                .addTo(map);
+
+            if (sessionStorage.getItem('start')) {
+                var start = JSON.parse(sessionStorage.getItem('start'));
+                getRoute(start, end);
+            }
+        });
+
+        map.on('load', function() {
+            if (sessionStorage.getItem('start') && sessionStorage.getItem('end')) {
+                var start = JSON.parse(sessionStorage.getItem('start'));
+                var end = JSON.parse(sessionStorage.getItem('end'));
+                startMarker = new mapboxgl.Marker({ color: 'blue' })
+                    .setLngLat(start)
+                    .addTo(map);
+                endMarker = new mapboxgl.Marker({ color: 'red' })
+                    .setLngLat(end)
+                    .addTo(map);
+                getRoute(start, end);
+            }
+        });
+
+        document.getElementById('currentLocationButton').addEventListener('click', function() {
+            if (navigator.geolocation) {
+                navigator.geolocation.getCurrentPosition(function(position) {
+                    var start = [position.coords.longitude, position.coords.latitude];
+                    sessionStorage.setItem('start', JSON.stringify(start));
+                    document.getElementById('startLat').value = start[1];
+                    document.getElementById('startLng').value = start[0];
+                    if (startMarker) {
+                        startMarker.remove();
+                    }
+                    startMarker = new mapboxgl.Marker({ color: 'blue' })
+                        .setLngLat(start)
+                        .addTo(map);
+
+                    startGeocoder.setInput(start);
+
+                    if (sessionStorage.getItem('end')) {
+                        var end = JSON.parse(sessionStorage.getItem('end'));
+                        getRoute(start, end);
+                    }
+
+                    map.flyTo({
+                        center: start,
+                        zoom: 14
+                    });
+                });
+            } else {
+                alert("Geolocation is not supported by this browser.");
+            }
+        });
+        function handleSubmit(event) {
+            event.preventDefault();
+        }
+        document.getElementById('rideForm').addEventListener('submit', function(event){
+            var startLocation = JSON.parse(sessionStorage.getItem('start'));
+            var endLocation = JSON.parse(sessionStorage.getItem('end'));
+            
+            if (startLocation && endLocation) {
+                document.getElementById('startLat').value = startLocation[1];
+                document.getElementById('startLng').value = startLocation[0];
+                document.getElementById('endLat').value = endLocation[1];
+                document.getElementById('endLng').value = endLocation[0];
+            } else {
+                event.preventDefault();
+                alert("Please select both a start and end location.");
+            }
+            event.preventDefault();
+        });
+        
+        document.addEventListener("DOMContentLoaded", () => {
+            // Assuming userId is available in your script
+            const userId = '<%= currentUser %>';
+
+            // Establish WebSocket connection
+            const ws = new WebSocket('ws://localhost:3000');
+
+            ws.onopen = () => {
+                console.log('WebSocket connection established');
+
+                // Function to send the location
+                const sendLocation = () => {
+                    if (navigator.geolocation) {
+                        navigator.geolocation.getCurrentPosition((position) => {
+                            const rider = 1;
+                            const latitude = position.coords.latitude;
+                            const longitude = position.coords.longitude;
+                            const timestamp =new Date().toLocaleString("en-Us", {timeZone: "Asia/Kolkata",});
+                            // Send latitude and longitude to the server
+                            ws.send(JSON.stringify({ userId, latitude, longitude,timestamp, rider}));
+                        }, (error) => {
+                            console.error('Error getting location:', error);
+                        });
+                    } else {
+                        console.error('Geolocation is not supported by this browser.');
+                    }
+                };
+
+                // Send location every second
+                ws.send(JSON.stringify({ userId, latitude, longitude,timestamp, rider,selectedRouteCoordinates}));
+                setInterval(sendLocation, 2000);
+            };
+
+            let messageContent;
+            ws.onmessage = (event) => {
+                const message = JSON.parse(event.data);
+                messageContent=message;
+                console.log('Message from server:', message);
+            };
+
+            ws.onerror = (error) => {
+                console.error('WebSocket error:', error);
+            };
+
+            ws.onclose = () => {
+                console.log('WebSocket connection closed');
+            };
+        });
+        
+
+    </script>
+</body>
+</html>

@@ -1,0 +1,93 @@
+<% layout('layouts/boilerplate')%>
+    <style>
+        .hidden {
+            display: none;
+        }
+    </style>
+<div class="container d-flex justify-content-center align-items-center mt-5">
+    <div class="row">
+        <div class="col-md-6 offset-md-3 col-xl-4 offset-xl-4">
+            <div class="card shadow">
+                <!-- https://images.unsplash.com/photo-1571863533956-01c88e79957e?ixlib=rb-1.2.1&ixid=eyJhcHBfaWQiOjEyMDd9&auto=format&fit=crop&w=1267&q=80 -->
+                <img src="https://images.unsplash.com/photo-1698047181077-d77608c3f85b?&ixlib=rb-1.2.1&ixid=eyJhcHBfaWQiOjEyMDd9&auto=format&fit=crop&w=1267&q=80"
+                    alt="" class="card-img-top" />
+                <div class="card-body">
+                    <h5 class="card-title">Register</h5>
+                    <form action="/userRegister" method="POST" class="validated-form" id="registerButton" novalidate>
+                        <div class="mb-3">
+                            <label class="form-label" for="username">Username</label>
+                            <input class="form-control" type="text" id="username" name="username" required autofocus>
+                            <div class="valid-feedback">
+                                Looks good!
+                            </div>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label" for="email">Email</label>
+                            <input class="form-control" type="email" id="email" name="email" required>
+                            <div class="valid-feedback">
+                                Looks good!
+                            </div>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label" for="phone">Phone No</label>
+                            <input class="form-control" type="number" id="phone" name="phone" required>
+                            <div class="valid-feedback">
+                                Looks good!
+                            </div>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label" for="password">Password</label>
+                            <input class="form-control" type="password" id="password" name="password" required>
+                            <div class="valid-feedback">
+                                Looks good!
+                            </div>
+                        </div>
+                        <div class="mb-3">
+                            <input class="form-check-input" type="checkbox" id="registerAsRider" name="registerAsRider">
+                            <label class="form-check-label" for="registerAsRider">Also register as Rider</label>
+                        </div>
+                        <div id="additionalForm" class="hidden">
+                            <div class="mb-3">
+                                <label class="form-label" for="riderLicense">Rider License Number</label>
+                                <input class="form-control" type="text" id="riderLicense" name="riderLicense">
+                            </div>
+                            <div class="mb-3">
+                                <label class="form-label" for="vehicleType">Vehicle Type</label>
+                                <input class="form-control" type="text" id="vehicleType" name="vehicleType">
+                            </div>
+                        </div>
+                        <button class="btn btn-success w-100">Register</button>
+                    </form>
+
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+<script>
+    document.addEventListener('DOMContentLoaded', (event) => {
+        const registerAsRiderCheckbox = document.getElementById('registerAsRider');
+        const additionalForm = document.getElementById('additionalForm');
+
+        registerAsRiderCheckbox.addEventListener('change', () => {
+            if (registerAsRiderCheckbox.checked) {
+                additionalForm.classList.remove('hidden');
+            } else {
+                additionalForm.classList.add('hidden');
+            }
+        });
+    });
+    
+    document.getElementById('registerButton').addEventListener('click', function() {
+        // Function to delete sessionStorage
+        function deleteSessionStorage() {
+            // Remove the 'start' item from sessionStorage
+            sessionStorage.removeItem('start','end');
+            // Optionally, clear all items from sessionStorage
+            // sessionStorage.clear();
+        }
+        // Call the function to delete sessionStorage
+        deleteSessionStorage();
+    });
+
+</script>
