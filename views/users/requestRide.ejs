@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <link href='https://api.mapbox.com/mapbox-gl-js/v2.11.0/mapbox-gl.css' rel='stylesheet' />
     <link href='https://api.mapbox.com/mapbox-gl-js/plugins/mapbox-gl-geocoder/v4.7.0/mapbox-gl-geocoder.css' rel='stylesheet' />
+    <script src="/socket.io/socket.io.js"></script>
     <style>
         body { margin: 0; padding: 0; }
         #map { position: absolute;top:75px;left: 300px; bottom: 0; width: 450px; height: 450px; }
@@ -42,16 +43,10 @@
         <div id="startGeocoder"></div>
         <button id="currentLocationButton" style="margin-top: 10px;">Use Current Location</button>
         <div id="endGeocoder" style="margin-top: 10px;"></div>
-        <form id="rideForm" action="/requestRide" method="POST" >
-            <!-- <label for="startLocation">Starting Location:</label>
-            <input type="text" id="startLocation" name="startLocation" required> -->
-    
+        <!-- onsubmit="handleSubmit(event)" -->
+        <form id="rideForm" action="/requestRide" method="POST">
             <input type="hidden" id="startLat" name="startLat">
             <input type="hidden" id="startLng" name="startLng">
-    
-            <!-- <label for="endLocation">Ending Location:</label>
-            <input type="text" id="endLocation" name="endLocation" required> -->
-    
             <input type="hidden" id="endLat" name="endLat">
             <input type="hidden" id="endLng" name="endLng">
     
@@ -208,11 +203,12 @@
                 alert("Geolocation is not supported by this browser.");
             }
         });
-
+        function handleSubmit(event) {
+            event.preventDefault();
+        }
         document.getElementById('rideForm').addEventListener('submit', function(event) {
             var startLocation = JSON.parse(sessionStorage.getItem('start'));
             var endLocation = JSON.parse(sessionStorage.getItem('end'));
-            
             if (startLocation && endLocation) {
                 document.getElementById('startLat').value = startLocation[1];
                 document.getElementById('startLng').value = startLocation[0];
@@ -222,49 +218,40 @@
                 event.preventDefault();
                 alert("Please select both a start and end location.");
             }
+            // event.preventDefault();
         });
 
         document.getElementById('rideForm').addEventListener('click', () => {
-        
-        // });
-        // document.addEventListener("DOMContentLoaded", () => {
-            // Assuming userId is available in your script
             const userId = '<%=currentUser%>';
-
-            // Establish WebSocket connection
-            const ws = new WebSocket('ws://localhost:3000');
-
-            ws.onopen = () => {
-                console.log('WebSocket connection established');
-
+            const socket = io();
+            socket.on('connect', () => {
+                console.log('Socket.IO connection established');
                 // Function to send the location
                 const sendLocation = () => {
-                            const rider = 0;
-                            const start = sessionStorage.getItem('start');
-                            const end = sessionStorage.getItem('end');
-                            const timestamp =new Date().toLocaleString("en-Us", {timeZone: "Asia/Kolkata",});
-                            // Send latitude and longitude to the server
-                            ws.send(JSON.stringify({ userId, start, end,timestamp, rider}));
-                        };
-                        sendLocation();
+                    const rider = 0;
+                    const start = sessionStorage.getItem('start');
+                    const end = sessionStorage.getItem('end');
+                    const timestamp = new Date().toLocaleString("en-US", { timeZone: "Asia/Kolkata" });
+                    // Send latitude and longitude to the server
+                    // socket.emit('locationUpdate', { userId, start, end, timestamp, rider });
+                    socket.emit('rideRequest', { userId, start, end, timestamp, rider });
+                };
+                sendLocation();
                 // Send location every second
                 // setInterval(sendLocation, 2000);
-            };
-
-            let messageContent;
-            ws.onmessage = (event) => {
-                const message = JSON.parse(event.data);
-                messageContent=message;
+            });
+            socket.on('message', (message) => {
+                messageContent = message;
                 console.log('Message from server:', message);
-            };
+            });
 
-            ws.onerror = (error) => {
-                console.error('WebSocket error:', error);
-            };
+            socket.on('error', (error) => {
+                console.error('Socket.IO error:', error);
+            });
 
-            ws.onclose = () => {
-                console.log('WebSocket connection closed');
-            };
+            socket.on('disconnect', () => {
+                console.log('Socket.IO connection closed');
+            });
         });
     </script>
 </body>

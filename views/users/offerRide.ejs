@@ -6,6 +6,7 @@
     <meta name="viewport" content="initial-scale=1,maximum-scale=1,user-scalable=no" />
     <link href='https://api.mapbox.com/mapbox-gl-js/v2.11.0/mapbox-gl.css' rel='stylesheet' />
     <link href='https://api.mapbox.com/mapbox-gl-js/plugins/mapbox-gl-geocoder/v4.7.0/mapbox-gl-geocoder.css' rel='stylesheet' />
+    <script src="/socket.io/socket.io.js"></script>
     <style>
         body { margin: 0; padding: 0; }
         #map { position: absolute; top: 0;left: 300px; bottom: 0; width: 450px; height: 450px; }
@@ -295,48 +296,84 @@
             const userId = '<%= currentUser %>';
 
             // Establish WebSocket connection
-            const ws = new WebSocket('ws://localhost:3000');
+        //     const ws = new WebSocket('ws://localhost:3000');
 
-            ws.onopen = () => {
-                console.log('WebSocket connection established');
+        //     ws.onopen = () => {
+        //         console.log('WebSocket connection established');
 
-                // Function to send the location
-                const sendLocation = () => {
-                    if (navigator.geolocation) {
-                        navigator.geolocation.getCurrentPosition((position) => {
-                            const rider = 1;
-                            const latitude = position.coords.latitude;
-                            const longitude = position.coords.longitude;
-                            const timestamp =new Date().toLocaleString("en-Us", {timeZone: "Asia/Kolkata",});
-                            // Send latitude and longitude to the server
-                            ws.send(JSON.stringify({ userId, latitude, longitude,timestamp, rider}));
-                        }, (error) => {
-                            console.error('Error getting location:', error);
-                        });
-                    } else {
-                        console.error('Geolocation is not supported by this browser.');
-                    }
-                };
+        //         // Function to send the location
+        //         const sendLocation = () => {
+        //             if (navigator.geolocation) {
+        //                 navigator.geolocation.getCurrentPosition((position) => {
+        //                     const rider = 1;
+        //                     const latitude = position.coords.latitude;
+        //                     const longitude = position.coords.longitude;
+        //                     const timestamp =new Date().toLocaleString("en-Us", {timeZone: "Asia/Kolkata",});
+        //                     // Send latitude and longitude to the server
+        //                     ws.send(JSON.stringify({ userId, latitude, longitude,timestamp, rider}));
+        //                 }, (error) => {
+        //                     console.error('Error getting location:', error);
+        //                 });
+        //             } else {
+        //                 console.error('Geolocation is not supported by this browser.');
+        //             }
+        //         };
 
-                // Send location every second
-                ws.send(JSON.stringify({ userId, latitude, longitude,timestamp, rider,selectedRouteCoordinates}));
-                setInterval(sendLocation, 2000);
-            };
+        //         // Send location every second
+        //         ws.send(JSON.stringify({ userId, latitude, longitude,timestamp, rider,selectedRouteCoordinates}));
+        //         setInterval(sendLocation, 2000);
+        //     };
 
-            let messageContent;
-            ws.onmessage = (event) => {
-                const message = JSON.parse(event.data);
-                messageContent=message;
-                console.log('Message from server:', message);
-            };
+        //     let messageContent;
+        //     ws.onmessage = (event) => {
+        //         const message = JSON.parse(event.data);
+        //         messageContent=message;
+        //         console.log('Message from server:', message);
+        //     };
 
-            ws.onerror = (error) => {
-                console.error('WebSocket error:', error);
-            };
+        //     ws.onerror = (error) => {
+        //         console.error('WebSocket error:', error);
+        //     };
 
-            ws.onclose = () => {
-                console.log('WebSocket connection closed');
-            };
+        //     ws.onclose = () => {
+        //         console.log('WebSocket connection closed');
+        //     };
+
+        const socket = io();
+
+                socket.on('connect', () => {
+                    console.log('Socket.io connection established');
+
+                    // Function to send the location
+                    const sendLocation = () => {
+                        if (navigator.geolocation) {
+                            navigator.geolocation.getCurrentPosition((position) => {
+                                const rider = 1;
+                                const latitude = position.coords.latitude;
+                                const longitude = position.coords.longitude;
+                                const timestamp = new Date().toLocaleString("en-Us", { timeZone: "Asia/Kolkata" });
+
+                                // Send latitude and longitude to the server
+                                socket.emit('locationUpdate', { userId, latitude, longitude, timestamp, rider});
+                            }, (error) => {
+                                console.error('Error getting location:', error);
+                            });
+                        } else {
+                            console.error('Geolocation is not supported by this browser.');
+                        }
+                    };
+
+                    // Send location every 2 seconds
+                    setInterval(sendLocation, 2000);
+                });
+
+                socket.on('message', (message) => {
+                    console.log('Message from server:', message);
+                });
+
+                socket.on('disconnect', () => {
+                    console.log('Socket.io connection closed');
+                });
         });
         
 

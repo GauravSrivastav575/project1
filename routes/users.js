@@ -24,5 +24,7 @@ router.route('/offerRide')
 router.route('/requestRide')
       .get(isLoggedIn, users.renderrequestRide)
       .post(isLoggedIn,catchAsync(users.requestRide))
+
+      
 module.exports = router;
 
