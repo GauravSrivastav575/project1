@@ -1,6 +1,8 @@
 
 
 const User = require('../models/user');
+const RideRequest = require('../models/rideRequest');
+// const  rider = require('../app');
 
 module.exports.renderRegisterForm = (req,res)=>{
     res.render('users/userRegister')
@@ -73,6 +75,12 @@ module.exports.offerRide = async (req, res) => {
     res.status(204).end();
     // res.redirect('/offerRide');
 };
+
 module.exports.requestRide = async (req, res) => {
-   res.send(req.body);
+    // console.log("User: ", rider);
+    // console.log("HIIII");
+    const rideRequest = new RideRequest({
+        
+    })
+    res.send(req.body);
 };
