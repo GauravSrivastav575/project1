@@ -93,42 +93,6 @@
         var selectedRouteIndex = null;
         var selectedRouteCoordinates = null;
 
-        // async function getRoute(start, end) {
-        //     const query = `https://api.mapbox.com/directions/v5/mapbox/driving/${start[0]},${start[1]};${end[0]},${end[1]}?steps=true&geometries=geojson&access_token=${mapboxgl.accessToken}`;
-            
-        //     const response = await fetch(query);
-        //     const data = await response.json();
-        //     const route = data.routes[0].geometry;
-            
-        //     if (map.getSource('route')) {
-        //         map.getSource('route').setData(route);
-        //     } else {
-        //         map.addLayer({
-        //             id: 'route',
-        //             type: 'line',
-        //             source: {
-        //                 type: 'geojson',
-        //                 data: route
-        //             },
-        //             layout: {
-        //                 'line-join': 'round',
-        //                 'line-cap': 'round'
-        //             },
-        //             paint: {
-        //                 'line-color': '#3887be',
-        //                 'line-width': 5,
-        //                 'line-opacity': 0.75
-        //             }
-        //         });
-        //     }
-
-        //     const bounds = new mapboxgl.LngLatBounds(start, start);
-        //     bounds.extend(end);
-        //     map.fitBounds(bounds, {
-        //         padding: 50
-        //     });
-        // }
-
         async function getRoute(start, end) {
             const query = `https://api.mapbox.com/directions/v5/mapbox/driving/${start[0]},${start[1]};${end[0]},${end[1]}?alternatives=true&steps=true&geometries=geojson&overview=full&access_token=${mapboxgl.accessToken}`;
             
@@ -292,54 +256,8 @@
         });
         
         document.addEventListener("DOMContentLoaded", () => {
-            // Assuming userId is available in your script
             const userId = '<%= currentUser %>';
-
-            // Establish WebSocket connection
-        //     const ws = new WebSocket('ws://localhost:3000');
-
-        //     ws.onopen = () => {
-        //         console.log('WebSocket connection established');
-
-        //         // Function to send the location
-        //         const sendLocation = () => {
-        //             if (navigator.geolocation) {
-        //                 navigator.geolocation.getCurrentPosition((position) => {
-        //                     const rider = 1;
-        //                     const latitude = position.coords.latitude;
-        //                     const longitude = position.coords.longitude;
-        //                     const timestamp =new Date().toLocaleString("en-Us", {timeZone: "Asia/Kolkata",});
-        //                     // Send latitude and longitude to the server
-        //                     ws.send(JSON.stringify({ userId, latitude, longitude,timestamp, rider}));
-        //                 }, (error) => {
-        //                     console.error('Error getting location:', error);
-        //                 });
-        //             } else {
-        //                 console.error('Geolocation is not supported by this browser.');
-        //             }
-        //         };
-
-        //         // Send location every second
-        //         ws.send(JSON.stringify({ userId, latitude, longitude,timestamp, rider,selectedRouteCoordinates}));
-        //         setInterval(sendLocation, 2000);
-        //     };
-
-        //     let messageContent;
-        //     ws.onmessage = (event) => {
-        //         const message = JSON.parse(event.data);
-        //         messageContent=message;
-        //         console.log('Message from server:', message);
-        //     };
-
-        //     ws.onerror = (error) => {
-        //         console.error('WebSocket error:', error);
-        //     };
-
-        //     ws.onclose = () => {
-        //         console.log('WebSocket connection closed');
-        //     };
-
-        const socket = io();
+            const socket = io();
 
                 socket.on('connect', () => {
                     console.log('Socket.io connection established');
@@ -352,9 +270,10 @@
                                 const latitude = position.coords.latitude;
                                 const longitude = position.coords.longitude;
                                 const timestamp = new Date().toLocaleString("en-Us", { timeZone: "Asia/Kolkata" });
-
+                                const start = [latitude,longitude];
+                                const end = sessionStorage.getItem('end');
                                 // Send latitude and longitude to the server
-                                socket.emit('locationUpdate', { userId, latitude, longitude, timestamp, rider});
+                                socket.emit('locationUpdate', { userId, start, end, timestamp, rider});
                             }, (error) => {
                                 console.error('Error getting location:', error);
                             });

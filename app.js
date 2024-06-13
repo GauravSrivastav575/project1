@@ -15,6 +15,13 @@ const ExpressError = require('./utils/ExpressError');
 const cookieParser = require('cookie-parser');
 const http = require('http');
 const {Server} = require('socket.io');
+// const users = require('./controllers/users');
+const { storeReturnTo,isLoggedIn } = require('./middleware');
+const mbxClient = require('@mapbox/mapbox-sdk');
+const mbxDirections = require('@mapbox/mapbox-sdk/services/directions');
+const geolib = require('geolib');
+const baseClient = mbxClient({accessToken: 'pk.eyJ1IjoiMTIzZ2F1cmF2IiwiYSI6ImNsd203MzFjcDFyeWYya215eno5NHpveGgifQ.HGwwKwppvbuFYvm5OSvTOQ'});
+const directionsClient = mbxDirections(baseClient);
 
 const app = express();
 
@@ -82,7 +89,33 @@ app.use((req, res, next) => {
     next();
 });
 
+// route matching function 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 app.use('/', userRoutes);
+
+app.get('/requestRide',isLoggedIn,(req,res)=>{
+    const {currentUser} = req.cookies;
+    res.render('users/requestRide',{currentUser});
+})
+app.post('/requestRide',isLoggedIn,(req,res)=>{
+    console.log("Hiii");
+})
 
 app.get('/', async(req, res) => {
   // const id = res.locals.currentUser._id.toString();
@@ -100,18 +133,13 @@ app.use((err, req, res, next) => {
     res.status(statusCode).render('error', { err });
 });
 
-
-function f(){
- console.log("HIII");
-}
-
 let users = {};
 
 io.on('connection', (socket) => {
     console.log('New client connected');
     let currentUserId = null;
 
-    socket.on('locationUpdate', (message) => {
+    socket.on('locationUpdate', (message) => { // for rider
         const data = message;
         const userId = data.userId;
         if (userId) {
@@ -119,22 +147,20 @@ io.on('connection', (socket) => {
         }
         const rider = data.rider;
         const timestamp = data.timestamp;
-        if (rider === 0) {
-            const start = data.start;
-            const end = data.end;
-            console.log(`Client ${userId} sent request from Start: ${start} to End: ${end} at ${timestamp}`);
-            //f();
-        } else {
+        
             const latitude = data.latitude;
             const longitude = data.longitude;
+            const start = data.start;
+            const end = data.end;
             if (userId) {
                 users[userId] = { latitude, longitude, timestamp };
                 currentUserId = userId;
-                console.log(`Rider ${userId} location updated to lat: ${latitude}, long: ${longitude} at ${timestamp}`);
+                console.log(`Rider ${userId} location updated to start: ${start}, end: ${end} at ${timestamp}`);
             }
-        }
+        console.log(users);
+        // console.log(message);
     });
-    socket.on('rideRequest', (message) => {
+    socket.on('rideRequest', (message) => { // for user
         const data = message;
         const userId = data.userId;
         if (userId) {
@@ -146,8 +172,6 @@ io.on('connection', (socket) => {
             const start = data.start;
             const end = data.end;
             console.log(`Client ${userId} sent request from Start: ${start} to End: ${end} at ${timestamp}`);
-            
-            //f();
         }
     });
 
@@ -162,54 +186,6 @@ io.on('connection', (socket) => {
         clearInterval(interval);
         console.log('Client disconnected');
     });
-});
-
-// wss.on('connection', function connection(ws, req) {
-//     console.log('New client connected');
-//     let currentUserId = null;
-//     ws.on('message', function incoming(message){
-//         const data = JSON.parse(message);
-//         // console.log(data);
-//         const userId = data.userId;
-//         if(userId){
-//             currentUserId = userId;
-//         }
-//         const rider = data.rider;
-//         const timestamp = data.timestamp;
-//         if(rider===0){
-//             const start = data.start;
-//             const end = data.end;
-//             console.log(`Client ${userId} sent request from Start: ${start} to End: ${end} at ${timestamp}`)
-//             // f(userId,start,end,timestamp);
-//         }
-//         else{
-//         const latitude = data.latitude;
-//         const longitude = data.longitude;
-//         // Map the latitude and longitude to the user ID
-//         if (userId){
-//             users[userId] = {latitude, longitude, timestamp };
-//             currentUserId = userId;
-//             console.log(`Rider ${userId} location updated to lat: ${latitude}, long: ${longitude} at ${timestamp}`);
-//         }
-//         }
-        
-//     });
-
-//     ws.send(JSON.stringify({ message: 'WebSocket connection established' }));
-//     const interval = setInterval(() => {
-//         if (ws.readyState === WebSocket.OPEN) {
-//             ws.send(JSON.stringify({ message: 'Hello from server', userId: currentUserId, timestamp: new Date().toISOString() }));
-//         }
-//     }, 2000);
-
-//     ws.on('close', () => {
-//         clearInterval(interval);
-//     });
-// });
-
-
-server.listen(3000, () => {
-    console.log("SERVING ON PORT 3000...");
 });
 
 // gaurav
