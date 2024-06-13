@@ -21,9 +21,9 @@ router.route('/offerRide')
       .get(isLoggedIn, users.renderofferRide)
       .post(isLoggedIn, catchAsync(users.offerRide))
 
-router.route('/requestRide')
-      .get(isLoggedIn, users.renderrequestRide)
-      .post(isLoggedIn,catchAsync(users.requestRide))
+// router.route('/requestRide')
+//       .get(isLoggedIn, users.renderrequestRide)
+//       .post(isLoggedIn,catchAsync(users.requestRide))
 
       
 module.exports = router;

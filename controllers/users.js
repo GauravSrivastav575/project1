@@ -3,7 +3,7 @@
 const User = require('../models/user');
 const RideRequest = require('../models/rideRequest');
 // const  rider = require('../app');
-
+const users = require('../app')
 module.exports.renderRegisterForm = (req,res)=>{
     res.render('users/userRegister')
 }
@@ -57,10 +57,10 @@ module.exports.renderofferRide = (req,res)=>{
     res.render('users/offerRide',{currentUser});
     // console.log(currentUser);
 }
-module.exports.renderrequestRide = (req,res)=>{
-    const {currentUser} = req.cookies;
-    res.render('users/requestRide',{currentUser});
-}
+// module.exports.renderrequestRide = (req,res)=>{
+//     const {currentUser} = req.cookies;
+//     res.render('users/requestRide',{currentUser});
+// }
 
 module.exports.offerRide = async (req, res) => {
     // console.log(req.body);
@@ -79,8 +79,7 @@ module.exports.offerRide = async (req, res) => {
 module.exports.requestRide = async (req, res) => {
     // console.log("User: ", rider);
     // console.log("HIIII");
-    const rideRequest = new RideRequest({
-        
-    })
-    res.send(req.body);
+    console.log(users);
+    res.status(204).end();
+    // res.send(req.body);
 };
